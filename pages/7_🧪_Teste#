@@ -1,0 +1,123 @@
+import streamlit as st
+import tempfile
+import ifcopenshell
+import numpy as np
+import ifcopenshell.util.shape
+import ifcopenshell.geom
+import multiprocessing
+import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+
+def get_element_xyz(ifc_file):
+    """Obtém as coordenadas X, Y e Z do centróide da bounding box de elementos do modelo IFC."""
+    settings = ifcopenshell.geom.settings()
+    iterator = ifcopenshell.geom.iterator(settings, ifc_file, multiprocessing.cpu_count())
+
+    element_ids, centroids_x, centroids_y, centroids_z, z_mins, z_maxs = [], [], [], [], [], []
+
+    if iterator.initialize():
+        while True:
+            shape = iterator.get()
+            element = ifc_file.by_id(shape.id)
+
+            if hasattr(shape, "geometry"):
+                verts = ifcopenshell.util.shape.get_element_vertices(element, shape.geometry)
+
+                if verts is None or len(verts) == 0:
+                    continue  # Ignora elementos sem vértices válidos
+
+                bbox_min, bbox_max = ifcopenshell.util.shape.get_bbox(verts)
+
+                if bbox_min is None or bbox_max is None or len(bbox_min) < 3 or len(bbox_max) < 3:
+                    continue  # Ignora bounding boxes inválidas
+
+                # Calcula as coordenadas do centróide
+                centroid_x = (bbox_min[0] + bbox_max[0]) / 2
+                centroid_y = (bbox_min[1] + bbox_max[1]) / 2
+                centroid_z = (bbox_min[2] + bbox_max[2]) / 2
+
+                # Adicionando aos arrays de retorno
+                element_ids.append(element.GlobalId)
+                centroids_x.append(centroid_x)
+                centroids_y.append(centroid_y)
+                centroids_z.append(centroid_z)
+                z_mins.append(bbox_min[2])
+                z_maxs.append(bbox_max[2])
+
+            if not iterator.next():
+                break
+
+    return element_ids, centroids_x, centroids_y, centroids_z
+
+def plot_element_distribution(element_ids, centroids_x, centroids_y, centroids_z):
+    """Gera gráficos de dispersão 2D (XY) e 3D (XYZ) dos elementos no modelo IFC."""
+    
+    # Se não houver elementos, encerra a função
+    if not element_ids:
+        st.warning("⚠ Nenhum elemento válido encontrado para plotar.")
+        return
+
+    # 🚀 Gráfico 2D (XY) - Distribuição na planta
+    st.subheader("Distribuição dos Elementos (XY)")
+    fig2d, ax2d = plt.subplots(figsize=(8, 6))
+    ax2d.scatter(range(len(centroids_z)), centroids_z, c='b', alpha=0.6, edgecolors='k')
+    ax2d.set_xlabel("Índice do Elemento")
+    ax2d.set_ylabel("Coordenada Z do Centróide")
+    ax2d.set_title("Distribuição dos Elementos (Z)")
+    ax2d.grid(True)
+    st.pyplot(fig2d)
+
+    # 🚀 Gráfico 3D (XYZ) - Distribuição espacial
+    st.subheader("Distribuição Espacial dos Elementos (XYZ)")
+    fig3d = go.Figure()
+    fig3d.add_trace(go.Scatter3d(
+        x=centroids_x,  # Coordenadas X
+        y=centroids_y,  # Coordenadas Y
+        z=centroids_z,  # Coordenadas Z
+        mode='markers',
+        marker=dict(size=5, color=centroids_z, colorscale='Viridis', opacity=0.8),
+        text=element_ids
+    ))
+
+    fig3d.update_layout(
+        title="Distribuição Espacial dos Elementos (XYZ)",
+        scene=dict(
+            xaxis_title="Coordenada X",
+            yaxis_title="Coordenada Y",
+            zaxis_title="Coordenada Z"
+        )
+    )
+
+    st.plotly_chart(fig3d)
+
+# Configuração da página Streamlit
+st.title("🛸 Esquadrão de Caça OVNIs IFC 👽")
+
+uploaded_file = st.file_uploader("Faça o upload do arquivo IFC", type=["ifc"])
+
+if uploaded_file:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".ifc") as temp_file:
+        temp_file.write(uploaded_file.read())
+        temp_file.flush()
+        ifc_file = ifcopenshell.open(temp_file.name)
+
+    # Obtém os dados dos elementos
+    element_ids, centroids_x, centroids_y, centroids_z = get_element_z(ifc_file)
+
+    # Chama a função para plotar a distribuição dos elementos
+    plot_element_distribution(element_ids, centroids_x, centroids_y, centroids_z)
+
+if uploaded_file:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".ifc") as temp_file:
+        temp_file.write(uploaded_file.read())
+        temp_file.flush()
+        ifc_file = ifcopenshell.open(temp_file.name)
+        ifc_file = ensure_ifc_units_in_meters(ifc_file)
+    
+    element_ids, centroids_x, centroids_y, centroids_z, _, _ = get_element_xyz(ifc_file)
+    elements = {gid: (x, y, z) for gid, x, y, z in zip(element_ids, centroids_x, centroids_y, centroids_z)}
+    
+    if st.button("Rodar Análise de OVNIs e ALIENS"):
+        outliers = detect_outliers(elements)
+        st.write(f"Foram detectados {len(outliers)} elementos como OVNIs ou ALIENS.")
+        plot_elements_3d(elements, outliers)

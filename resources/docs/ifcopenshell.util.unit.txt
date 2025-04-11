@@ -1,0 +1,232 @@
+Module Contents
+ifcopenshell.util.unit.cache_units(ifc_file: ifcopenshell.file) → None
+
+    Cache the default units for performance
+
+    Repetitively fetching project units (such as for determining the unit of a property) can be costly. This enables a cache to make it faster. If the project units change, you can update the cache by rerunning this function.
+
+    Parameters:
+
+        ifc_file – The IFC file.
+
+ifcopenshell.util.unit.calculate_unit_scale(ifc_file: ifcopenshell.file, unit_type: str = 'LENGTHUNIT') → float
+
+Returns a unit scale factor to convert to and from IFC project units and SI units.
+
+Example:
+
+ifc_project_length * unit_scale = si_meters
+si_meters / unit_scale = ifc_project_length
+
+    Parameters:
+
+            ifc_file – The IFC file.
+
+            unit_type – The type of SI unit, defaults to “LENGTHUNIT”
+
+    Returns:
+
+        The scale factor
+
+ifcopenshell.util.unit.clear_unit_cache(ifc_file: ifcopenshell.file) → None
+
+    Clears the unit cache of the project
+
+    Parameters:
+
+        ifc_file – The IFC file.
+
+ifcopenshell.util.unit.convert(value: float, from_prefix: str | None, from_unit: str, to_prefix: str | None, to_unit: str) → float
+
+    Converts between length, area, and volume units
+
+    In this case, you manually specify the names and (optionally) prefixes to convert to and from. In case you want to automatically convert to units already available as IFC entities, consider using convert_unit() instead.
+
+    Parameters:
+
+            value – The numeric value you want to convert
+
+            from_prefix – A prefix from IfcSIPrefix. Can be None
+
+            from_unit – IfcSIUnitName or IfcConversionBasedUnit.Name
+
+            to_prefix – A prefix from IfcSIPrefix. Can be None
+
+            to_unit – IfcSIUnitName or IfcConversionBasedUnit.Name
+
+    Returns:
+
+        The converted value.
+
+ifcopenshell.util.unit.convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str = 'METER') → ifcopenshell.file
+
+    Converts all units in an IFC file to the specified target units. Returns a new file.
+
+ifcopenshell.util.unit.convert_unit(value: float, from_unit: ifcopenshell.entity_instance, to_unit: ifcopenshell.entity_instance) → float
+
+    Convert from one unit to another unit
+
+    Parameters:
+
+            value – The numeric value you want to convert
+
+            from_unit – The IfcNamedUnit to confirm from.
+
+            to_unit – The IfcNamedUnit to confirm from.
+
+    Returns:
+
+        The converted value.
+
+ifcopenshell.util.unit.format_length(value: float, precision: float, decimal_places: int = 2, suppress_zero_inches=True, unit_system: Literal['metric', 'imperial'] = 'imperial', input_unit: Literal['foot', 'inch'] = 'foot', output_unit: Literal['foot', 'inch'] = 'foot') → str
+
+    Formats a length for readability and imperial formatting
+
+    Parameters:
+
+            value – The value in meters if metric, or either decimal feet or inches if imperial depending on input_unit.
+
+            precision – How precise the format should be. I.e. round to nearest. For imperial, it is 1/Nth. E.g. 12 means to the nearest 1/12th of an inch.
+
+            decimal_places – How many decimal places to display. Defaults to 2.
+
+            suppress_zero_inches – If imperial, whether or not to supress the inches if the inches is zero.
+
+            unit_system – Choose whether your value is “metric” or “imperial”
+
+            input_unit – If imperial, specify whether your value is “foot” or “inch”.
+
+            output_unit – If imperial, specify whether your value is “foot” to format as both feet and inches, or “inch” if only inches should be shown.
+
+    Returns:
+
+        The formatted string, such as 1’ - 5 1/2”.
+
+ifcopenshell.util.unit.get_full_unit_name(unit: ifcopenshell.entity_instance) → str
+
+ifcopenshell.util.unit.get_measure_unit_type(measure_class: MEASURE_CLASS) → str
+
+    Get the unit type of an IFC measure class
+
+    IFC has different unit types which can be associated with units (e.g. SI units, imperial units, derived units, etc). An example of a unit type (i.e. an IfcUnitEnum) is LENGTHUNIT. An example of the correlating measure class used to store length data is IfcLengthMeasure.
+
+    The inverse fucntion of this is get_unit_measure_class()
+
+    Parameters:
+
+        measure_class – The measure class, such as IfcLengthMeasure. If you have an IfcPropertySingleValue, you can get this using prop.NominalValue.is_a().
+    Returns:
+
+        The unit type, as an uppercase value of IfcUnitEnum.
+
+ifcopenshell.util.unit.get_named_dimensions(name)
+
+ifcopenshell.util.unit.get_prefix(text)
+
+ifcopenshell.util.unit.get_prefix_multiplier(text)
+
+ifcopenshell.util.unit.get_project_unit(ifc_file: ifcopenshell.file, unit_type: str, use_cache: bool = False) → ifcopenshell.entity_instance | None
+
+    Get the default project unit of a particular unit type
+
+    Parameters:
+
+            ifc_file – The IFC file.
+
+            unit_type – The type of unit, taken from the list of IFC unit types, such as “LENGTHUNIT”.
+
+    Returns:
+
+        The IFC unit entity, or nothing if there is no default project unit defined.
+
+ifcopenshell.util.unit.get_property_table_unit(prop: ifcopenshell.entity_instance, ifc_file: ifcopenshell.file, use_cache: bool = False) → Dict[str, ifcopenshell.entity_instance | None]
+
+    Gets the unit definition of a property table
+
+    Properties and quantities in psets and qtos can be associated with a unit. This unit may be defined at the property itself explicitly, or if not specified, fallback to the project default.
+
+    Parameters:
+
+            prop – The property instance. You can fetch this via the instance ID if doing ifcopenshell.util.element.get_psets() with verbose=True.
+
+            ifc_file – The IFC file being used. This is necessary to check default project units.
+
+    Returns:
+
+        A dictionary containing IFC unit entity by keyword. If a unit-entity is missing, the value associated to the key is null.
+
+ifcopenshell.util.unit.get_property_unit(prop: ifcopenshell.entity_instance, ifc_file: ifcopenshell.file, use_cache: bool = False) → ifcopenshell.entity_instance | None
+
+    Gets the unit definition of a property or quantity
+
+    Properties and quantities in psets and qtos can be associated with a unit. This unit may be defined at the property itself explicitly, or if not specified, fallback to the project default.
+
+    Parameters:
+
+            prop – The IfcProperty instance. You can fetch this via the instance ID if doing ifcopenshell.util.element.get_psets() with verbose=True.
+
+            ifc_file – The IFC file being used. This is necessary to check default project units.
+
+    Returns:
+
+        The IFC unit entity, or nothing if there is no default project unit defined.
+
+ifcopenshell.util.unit.get_si_dimensions(name)
+
+ifcopenshell.util.unit.get_symbol_measure_class(symbol: str | None = None) → MEASURE_CLASS
+
+ifcopenshell.util.unit.get_symbol_quantity_class(symbol: str | None = None) → QUANTITY_CLASS
+
+ifcopenshell.util.unit.get_unit_assignment(ifc_file: ifcopenshell.file) → ifcopenshell.entity_instance | None
+
+ifcopenshell.util.unit.get_unit_measure_class(unit_type: str) → MEASURE_CLASS
+
+    Get the IFC measure class for a unit type.
+
+    IFC has specific classes used to measure different units. An example of an IFC measure class is IfcLengthMeasure. An example of the correlating unit type (i.e. the IfcUnitEnum) is LENGTHUNIT.
+
+    The inverse function of this is get_measure_unit_type()
+
+    Parameters:
+
+        unit_type – A string chosen from IfcUnitEnum, such as LENGTHUNIT
+
+ifcopenshell.util.unit.get_unit_name(text: str) → str | None
+
+    Get unit name from str, if unit is in SI.
+
+ifcopenshell.util.unit.get_unit_name_universal(text: str) → str | None
+
+    Get unit name from str, supports both SI and imperial system.
+
+    Can be used to provide units for convert()
+
+ifcopenshell.util.unit.get_unit_symbol(unit: ifcopenshell.entity_instance) → str
+
+ifcopenshell.util.unit.is_attr_type(content_type: ifcopenshell.ifcopenshell_wrapper.parameter_type, ifc_unit_type_name: str, include_select_types: bool = True) → ifcopenshell.ifcopenshell_wrapper.type_declaration | None
+
+ifcopenshell.util.unit.iter_element_and_attributes_per_type(ifc_file: ifcopenshell.file, attr_type_name: str) → Iterable[tuple[ifcopenshell.entity_instance, ifcopenshell.ifcopenshell_wrapper.attribute, Any]]
+
+ifcopenshell.util.unit.MEASURE_CLASS
+
+ifcopenshell.util.unit.QUANTITY_CLASS
+
+ifcopenshell.util.unit.imperial_types
+
+ifcopenshell.util.unit.named_dimensions
+
+ifcopenshell.util.unit.prefix_symbols
+
+ifcopenshell.util.unit.prefixes
+
+ifcopenshell.util.unit.si_conversions
+
+ifcopenshell.util.unit.si_dimensions
+
+ifcopenshell.util.unit.si_offsets
+
+ifcopenshell.util.unit.si_type_names
+
+ifcopenshell.util.unit.unit_names = ['AMPERE', 'BECQUEREL', 'CANDELA', 'COULOMB', 'CUBIC_METRE', 'DEGREE_CELSIUS', 'FARAD', 'GRAM',...
+
+ifcopenshell.util.unit.unit_symbols

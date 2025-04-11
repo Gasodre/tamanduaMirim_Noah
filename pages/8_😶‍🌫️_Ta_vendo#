@@ -1,0 +1,48 @@
+import streamlit as st
+import ifcopenshell
+import tempfile
+import pandas as pd
+
+def get_ifc_units(ifc_file_path):
+    try:
+        ifc_file = ifcopenshell.open(ifc_file_path)
+        project = ifc_file.by_type("IfcProject")
+        
+        if not project:
+            return {"Erro": "Nenhum IfcProject encontrado no arquivo."}
+        
+        project = project[0]
+        unit_assignment = project.UnitsInContext
+        
+        if not unit_assignment or not hasattr(unit_assignment, "Units"):
+            return {"Erro": "Nenhuma unidade encontrada no arquivo IFC."}
+        
+        units = []
+        for unit in unit_assignment.Units:
+            prefix = getattr(unit, "Prefix", "")
+            unit_name = getattr(unit, "Name", str(unit))
+            units.append({"Tipo de Unidade": unit.UnitType, "Unidade": f"{prefix} {unit_name}".strip()})
+        
+        return units
+
+    except Exception as e:
+        return [{"Erro": str(e)}]
+
+# Interface Streamlit
+st.title("Visualizador de Unidades do IFC")
+
+uploaded_file = st.file_uploader("Carregue um arquivo IFC", type=["ifc"])
+
+if uploaded_file is not None:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".ifc") as temp_file:
+        temp_file.write(uploaded_file.read())
+        temp_path = temp_file.name
+    
+    units = get_ifc_units(temp_path)
+    
+    st.subheader("Unidades encontradas:")
+    if units and "Erro" not in units[0]:
+        df = pd.DataFrame(units)
+        st.dataframe(df)
+    else:
+        st.error(units[0]["Erro"])
