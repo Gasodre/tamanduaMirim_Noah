@@ -11,3 +11,4 @@ scikit_learn==1.6.1
 stqdm==0.0.5
 streamlit==1.37.1
 xmlschema==3.4.5
+ifctester==0.8.1
