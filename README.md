@@ -30,8 +30,7 @@ Este é um conversor de requisitos de informação contidos em planilhas do Exce
 
 - [X] Incluir outros tipos de restrição suportados pelo padrão IDS
 - [X] Conexão com o **bSDD**
-- [ ] Adicionar validador IDS automático 🔍
-- [ ] Criador de arquivos **BCF** para facilitar comunicação de problemas 💬
+- [X] Adicionar validador IDS automático 🔍
 
 ---
 
